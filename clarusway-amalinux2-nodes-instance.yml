@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: >
+  This Cloudformation Template creates a Jenkins Server on Docker machine on EC2 Instance. 
+  Jenkins Server will run on Amazon Linux 2 (ami-026dea5602e368e96) EC2 Instance with
+  custom security group allowing SSH (22) and HTTP (80, 8080) connections from anywhere.
+Parameters:
+  KeyPairName:
+    Description: Enter the name of your Key Pair for SSH connections.
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must one of the existing EC2 KeyPair
+
+Resources:
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH and HTTP for Jenkins Server
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+  Server:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-09d95fab7fff3776c
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroupIds:
+        - !GetAtt ServerSecurityGroup.GroupId
+      Tags:                
+        -                        
+          Key: Name
+          Value: !Sub Server of ${AWS::StackName}   
+      UserData:
+        Fn::Base64: |
+          #! /bin/bash
+          yum update -y
+Outputs:
+  InstanceDNS:
+    Description: Server DNS Name
+    Value: !Sub 
+      - ${PublicAddress}
+      - PublicAddress: !GetAtt Server.PublicDnsName
